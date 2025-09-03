@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>WSP-Bot Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #00e5ff;
+            --secondary-color: #16213e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --text-color: #e0e0e0;
+            --glow-shadow: 0 0 15px rgba(0, 229, 255, 0.5), 0 0 30px rgba(0, 229, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            height: 100vh;
+            margin: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            touch-action: manipulation;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            color: white;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: 1.1em;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .status-connected {
+            background-color: rgba(0, 229, 255, 0.2);
+            color: var(--primary-color);
+            box-shadow: var(--glow-shadow);
+        }
+
+        .status-disconnected {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #ff8a8a;
+        }
+        
+        #joystick-container {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        #joystick-handle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            position: absolute;
+            cursor: grab;
+            transition: transform 0.1s ease-out;
+            box-shadow: var(--glow-shadow);
+            border: 3px solid #1a1a2e;
+        }
+        
+        .mode-controls {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            justify-content: center;
+        }
+        
+        .mode-btn {
+            flex-grow: 1;
+            padding: 15px 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: 2px solid var(--primary-color);
+            border-radius: 15px;
+            background: transparent;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mode-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn:active {
+            background: var(--primary-color);
+            color: var(--bg-color);
+            transform: scale(0.96);
+            box-shadow: var(--glow-shadow);
+        }
+
+        .mode-btn:active svg {
+            fill: var(--bg-color);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>WSP-Bot</h1>
+        <div id="status" class="status-disconnected">Connecting...</div>
+    </div>
+
+    <div id="joystick-container">
+        <div id="joystick-handle"></div>
+    </div>
+
+    <div class="mode-controls">
+        <button class="mode-btn" id="land_mode">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15,19.88C15.04,20.18 15.25,20.43 15.5,20.5C15.75,20.57 16.02,20.47 16.2,20.28L18.96,17.5L20.06,19.31C20.25,19.67 20.7,19.8 21.08,19.6C21.45,19.4 21.61,18.95 21.41,18.58L19.47,15.22L21.41,11.85C21.61,11.5 21.45,11 21.08,10.8C20.7,10.6 20.25,10.75 20.06,11.12L18.96,12.93L16.2,10.17C16.02,9.97 15.75,9.87 15.5,9.94C15.25,10 15.04,10.25 15,10.55V19.88M1,19V5C1,3.89 1.9,3 3,3H13V5H3V19H13V21H3C1.9,21 1,20.1 1,19Z"/></svg>
+            Land Mode
+        </button>
+        <button class="mode-btn" id="water_mode">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 5.58,20 10,20C10.55,20 11.08,19.92 11.6,19.78C12.55,21.07 13.9,22 15.5,22C18.54,22 21,19.54 21,16.5C21,13.77 19.1,11.5 16.5,11.17C16,6.24 12,2 12,2M15.5,13A4.5,4.5 0 0,1 20,16.5A4.5,4.5 0 0,1 15.5,21A4.5,4.5 0 0,1 11,16.5A4.5,4.5 0 0,1 15.5,13Z"/></svg>
+            Water Mode
+        </button>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const joystickContainer = document.getElementById('joystick-container');
+        const joystickHandle = document.getElementById('joystick-handle');
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}`;
+        let ws;
+        let isDragging = false;
+        let joystickInterval = null;
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                statusDiv.textContent = 'Connected';
+                statusDiv.className = 'status-connected';
+            };
+            ws.onclose = () => {
+                statusDiv.textContent = 'Disconnected';
+                statusDiv.className = 'status-disconnected';
+                setTimeout(connect, 3000);
+            };
+            ws.onerror = () => ws.close();
+        }
+
+        function sendCommand(command) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(command));
+            }
+        }
+
+        // --- Joystick Logic ---
+        const maxRadius = joystickContainer.offsetWidth / 2 - joystickHandle.offsetWidth / 2;
+
+        function startDrag(event) {
+            isDragging = true;
+            joystickHandle.style.cursor = 'grabbing';
+            joystickHandle.style.transition = 'none';
+            if (!joystickInterval) {
+                joystickInterval = setInterval(sendJoystickData, 50);
+            }
+            moveJoystick(event);
+        }
+
+        function stopDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            joystickHandle.style.cursor = 'grab';
+            joystickHandle.style.transition = 'transform 0.2s ease-out';
+            joystickHandle.style.transform = `translate(0px, 0px)`;
+            clearInterval(joystickInterval);
+            joystickInterval = null;
+            sendCommand({ type: 'joystick', x: 0, y: 0 });
+        }
+
+        function moveJoystick(event) {
+            if (!isDragging) return;
+            event.preventDefault();
+
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+
+            const rect = joystickContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            let x = clientX - centerX;
+            let y = clientY - centerY;
+
+            const angle = Math.atan2(y, x);
+            const distance = Math.min(Math.sqrt(x * x + y * y), maxRadius);
+
+            const newX = distance * Math.cos(angle);
+            const newY = distance * Math.sin(angle);
+
+            joystickHandle.style.transform = `translate(${newX}px, ${newY}px)`;
+        }
+
+        function sendJoystickData() {
+            const transform = joystickHandle.style.transform;
+            if (transform) {
+                const match = transform.match(/translate\(([-.\d]+)px, ([-.\d]+)px\)/);
+                if (match) {
+                    const x = parseFloat(match[1]);
+                    const y = parseFloat(match[2]);
+                    
+                    const normalizedX = (x / maxRadius).toFixed(2);
+                    const normalizedY = (y / maxRadius * -1).toFixed(2);
+
+                    sendCommand({ type: 'joystick', x: parseFloat(normalizedX), y: parseFloat(normalizedY) });
+                }
+            }
+        }
+        
+        joystickHandle.addEventListener('mousedown', startDrag);
+        joystickHandle.addEventListener('touchstart', startDrag, { passive: false });
+        
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+
+        window.addEventListener('mousemove', moveJoystick);
+        window.addEventListener('touchmove', moveJoystick, { passive: false });
+        
+        // Button Events for Land/Water modes
+        document.getElementById('land_mode').addEventListener('click', () => sendCommand({ type: 'land_mode' }));
+        document.getElementById('water_mode').addEventListener('click', () => sendCommand({ type: 'water_mode' }));
+
+        connect();
+    </script>
+</body>
+</html>
+
