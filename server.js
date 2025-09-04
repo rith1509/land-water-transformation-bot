@@ -1,89 +1,92 @@
-// 1. Import necessary libraries
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const os = require('os');
 
-// 2. Initialize Express app and create an HTTP server
 const app = express();
-const server = http.createServer(app);
-
-// 3. Set up the view engine to use EJS
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// 4. Initialize WebSocket server
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// 5. Store WebSocket connections
-let robotSocket = null; // We'll store the robot's connection here
-let controllerSocket = null; // And the controller's connection here
+// Store connected clients and identify them
+const clients = {
+  robot: null,
+  controller: null
+};
 
-// 6. Handle WebSocket connections
-wss.on('connection', (ws) => {
-    console.log('A client connected.');
-
-    // Heuristic: The first client to connect is the robot.
-    // A more robust method would involve an initial handshake message.
-    if (!robotSocket) {
-        robotSocket = ws;
-        console.log('Robot connected!');
-
-        ws.on('close', () => {
-            console.log('Robot disconnected.');
-            robotSocket = null; // Clear the stored socket
-        });
-
-        // Handle messages from the robot (e.g., sensor data), if any
-        ws.on('message', (message) => {
-            console.log(`Message from Robot: ${message}`);
-            // If robot sends data, you could forward it to the controller
-            if (controllerSocket && controllerSocket.readyState === WebSocket.OPEN) {
-                controllerSocket.send(`Robot says: ${message}`);
-            }
-        });
-
-    } else if (!controllerSocket) {
-        controllerSocket = ws;
-        console.log('Controller connected!');
-
-        ws.on('close', () => {
-            console.log('Controller disconnected.');
-            controllerSocket = null; // Clear the stored socket
-        });
-
-        // Handle messages from the controller
-        ws.on('message', (message) => {
-            const command = message.toString();
-            console.log(`Received command from controller: ${command}`);
-
-            // Forward the command to the robot if it's connected
-            if (robotSocket && robotSocket.readyState === WebSocket.OPEN) {
-                console.log(`Forwarding command to robot: ${command}`);
-                robotSocket.send(command);
-            } else {
-                console.log('Robot is not connected. Command not sent.');
-                // Optionally, send a feedback message to the controller
-                ws.send('Error: Robot is not connected.');
-            }
-        });
-    } else {
-        // A third client tried to connect
-        console.log('A third client tried to connect. Disconnecting.');
-        ws.send('Error: A controller is already connected.');
-        ws.close();
-    }
-});
-
-// 7. Serve the main controller UI
+// Serve the controller UI
 app.get('/', (req, res) => {
-    res.render('index');
+  res.render('index');
 });
 
-// 8. Start the server
-const PORT = 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running.`);
-    console.log(`Open http://<YOUR_COMPUTER_IP>:${PORT} on your phone or browser.`);
-    console.log('Make sure your ESP32 and computer are on the same Wi-Fi network.');
+// Handle WebSocket connections
+wss.on('connection', (ws) => {
+  console.log('A client connected.');
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+
+      // --- Client Identification ---
+      if (data.type === 'identify') {
+        if (data.id === 'robot') {
+          clients.robot = ws;
+          console.log('ROBOT identified and connected.');
+        } else if (data.id === 'controller') {
+          clients.controller = ws;
+          console.log('CONTROLLER identified and connected.');
+        }
+        return;
+      }
+
+      // --- Clearer Logging Logic ---
+      if (ws === clients.controller) {
+        console.log(`Message from Controller: ${message}`);
+        if (clients.robot && clients.robot.readyState === WebSocket.OPEN) {
+          clients.robot.send(message);
+          console.log('--> Forwarded to Robot.');
+        } else {
+          console.log('--> Robot not connected. Command not sent.');
+        }
+      } else if (ws === clients.robot) {
+        console.log(`Message from Robot: ${message}`);
+      }
+
+    } catch (error) {
+      console.error('Failed to parse message or invalid message format:', message.toString());
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('A client disconnected.');
+    if (ws === clients.robot) {
+      clients.robot = null;
+      console.log('ROBOT disconnected.');
+    } else if (ws === clients.controller) {
+      clients.controller = null;
+      console.log('CONTROLLER disconnected.');
+    }
+  });
+});
+
+// Find local IP address to display
+const networkInterfaces = os.networkInterfaces();
+let ipAddress = 'localhost';
+for (const netInterface in networkInterfaces) {
+  for (const network of networkInterfaces[netInterface]) {
+    if (network.family === 'IPv4' && !network.internal) {
+      ipAddress = network.address;
+      break;
+    }
+  }
+}
+
+// Start the server
+const port = 3000;
+server.listen(port, () => {
+  console.log(`Server is running.`);
+  console.log(`Open controller UI at: http://${ipAddress}:${port}`);
 });
