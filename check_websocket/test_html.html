@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Test</title>
+</head>
+<body>
+  <h1>WebSocket Test</h1>
+  <script>
+    // Replace <ESP_IP> with your ESP8266 IP address
+    const socket = new WebSocket('ws://192.168.169.48:81');
+
+    socket.onopen = () => {
+      console.log('Connected to ESP8266');
+      socket.send('hello from browser'); // send message
+    };
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Land Water Transformation Bot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0f0f1a;
+      --primary-color: #00e5ff;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --text-color: #e0e0e0;
+      --glow-shadow: 0 0 15px rgba(0, 229, 255, 0.5), 0 0 30px rgba(0, 229, 255, 0.3);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+      background-size: 300% 300%;
+      animation: bgShift 15s ease infinite;
+      color: var(--text-color);
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    @keyframes bgShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .header { text-align: center; }
+    h1 { margin: 0; font-size: 2.5em; color: white; text-shadow: 0 0 10px var(--primary-color); }
+
+    #status {
+      margin-top: 10px;
+      font-size: 1.1em;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      transition: background-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+    }
+    .status-connected { background-color: rgba(0,229,255,0.15); color: var(--primary-color); box-shadow: var(--glow-shadow); }
+    .status-disconnected { background-color: rgba(220,53,69,0.15); color: #ff8a8a; }
+
+    /* Layout */
+    .main-panel {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      gap: 50px;
+      margin-top: 20px;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    /* Joystick */
+    #joystick-container {
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex; justify-content: center; align-items: center;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #joystick-handle {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      position: absolute;
+      cursor: grab;
+      transition: transform 0.1s ease-out;
+      box-shadow: var(--glow-shadow);
+      border: 3px solid #1a1a2e;
+    }
+    .crosshair {
+      position: absolute; width: 2px; height: 100%;
+      background: rgba(255,255,255,0.2);
+    }
+    .crosshair::after {
+      content: ""; position: absolute;
+      width: 100%; height: 100%;
+      background: rgba(255,255,255,0.2);
+      transform: rotate(90deg);
+    }
+
+    /* Right Panel */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      min-width: 150px;
+    }
+    #joystick-data {
+      font-family: monospace;
+      font-size: 1em;
+      text-align: center;
+      color: var(--primary-color);
+      text-shadow: 0 0 5px var(--primary-color);
+    }
+
+    /* Vertical Power Bar */
+    .power-bar-container {
+      width: 40px; height: 180px;
+      background: var(--glass-bg);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 0 10px rgba(0,229,255,0.3);
+      position: relative;
+    }
+    .power-bar-fill {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(to top, #00e5ff, #00ffaa);
+      box-shadow: 0 0 15px rgba(0,229,255,0.8);
+      transition: height 0.1s linear;
+    }
+    .power-bar-label {
+      margin-top: 8px;
+      font-size: 1em;
+      color: var(--primary-color);
+      text-shadow: 0 0 5px var(--primary-color);
+    }
+
+    /* Bottom Controls */
+    .bottom-panel {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .mode-controls {
+      display: flex; gap: 20px; width: 100%; justify-content: center;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 12px 18px;
+      font-size: 1.1em; font-weight: 600;
+      border: 2px solid var(--primary-color);
+      border-radius: 12px;
+      background: transparent; color: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 5px var(--primary-color);
+    }
+    .mode-btn.active { background: var(--primary-color); color: var(--bg-color); box-shadow: var(--glow-shadow); }
+    .mode-btn:focus { outline: none; box-shadow: 0 0 0 3px var(--primary-color); }
+
+    .status-panel {
+      display: flex; gap: 15px; justify-content: center;
+      width: 100%;
+    }
+    .card {
+      background: var(--glass-bg);
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: 600;
+      box-shadow: var(--glow-shadow);
+      text-align: center;
+      flex: 1;
+      transition: all 0.3s ease;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 600px) {
+        .main-panel {
+            flex-direction: column;
+            gap: 30px;
+            margin-top: 0;
+        }
+        #joystick-container {
+            width: 200px;
+            height: 200px;
+        }
+        #joystick-handle {
+            width: 60px;
+            height: 60px;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Land Water Transformation Bot</h1>
+    <div id="status" class="status-disconnected">Connecting...</div>
+  </div>
+
+  <!-- Main Panel -->
+  <div class="main-panel">
+    <div id="joystick-container">
+      <div class="crosshair"></div>
+      <div id="joystick-handle"></div>
+    </div>
+
+    <div class="right-panel">
+      <div id="joystick-data">X: 0.00 | Y: 0.00</div>
+      <div class="power-bar-container">
+        <div class="power-bar-fill" id="power-fill"></div>
+      </div>
+      <div class="power-bar-label" id="power-label">0%</div>
+    </div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <div class="bottom-panel">
+    <div class="mode-controls">
+      <button class="mode-btn active" id="land_mode">Land Mode</button>
+      <button class="mode-btn" id="water_mode">Water Mode</button>
+    </div>
+    <div class="status-panel">
+      <div class="card" id="signal-card">📶 Signal: --</div>
+      <div class="card" id="mode-card">⚙️ Mode: Land</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase and app ID placeholders (not used in this specific app, but good practice)
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickHandle = document.getElementById('joystick-handle');
+    const dataText = document.getElementById('joystick-data');
+    const powerFill = document.getElementById('power-fill');
+    const powerLabel = document.getElementById('power-label');
+    const modeCard = document.getElementById('mode-card');
+    const statusDiv = document.getElementById('status');
+    const landBtn = document.getElementById('land_mode');
+    const waterBtn = document.getElementById('water_mode');
+
+    // --- WebSocket Variables ---
+    // IMPORTANT: Replace the IP address below with the actual IP of your ESP8266.
+    const websocketUrl = 'ws://10.81.37.218:81';
+    let socket = null;
+    let currentMode = 'land'; // 'land' or 'water'
+    let joystickData = { x: 0.0, y: 0.0, power: 0 };
+    const maxRadius = joystickContainer.offsetWidth / 2 - joystickHandle.offsetWidth / 2;
+    let isDragging = false;
+    
+    // --- WebSocket Functions ---
+    function connectWebSocket() {
+      statusDiv.textContent = "Connecting...";
+      statusDiv.className = "status-disconnected";
+      try {
+        socket = new WebSocket(websocketUrl);
+        
+        socket.onopen = () => {
+          console.log('Connected to ESP8266');
+          statusDiv.textContent = "Connected";
+          statusDiv.className = "status-connected";
+        };
+
+        socket.onclose = () => {
+          console.log('Disconnected from ESP8266. Reconnecting...');
+          statusDiv.textContent = "Disconnected";
+          statusDiv.className = "status-disconnected";
+          setTimeout(connectWebSocket, 3000); // Attempt to reconnect after 3 seconds
+        };
+
+        socket.onerror = (error) => {
+          console.error('WebSocket Error:', error);
+          statusDiv.textContent = "Error";
+          statusDiv.className = "status-disconnected";
+          socket.close(); // Close to trigger onclose and reconnect logic
+        };
+      } catch (error) {
+        console.error("Failed to create WebSocket:", error);
+        statusDiv.textContent = "Connection Failed";
+        statusDiv.className = "status-disconnected";
+        setTimeout(connectWebSocket, 3000);
+      }
+    }
+
+    function sendJoystickData() {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        const payload = {
+          x: joystickData.x.toFixed(2),
+          y: joystickData.y.toFixed(2),
+          power: joystickData.power,
+          mode: currentMode
+        };
+        socket.send(JSON.stringify(payload));
+        // console.log("Sent:", JSON.stringify(payload));
+      }
+    }
+
+    // Start sending data every 50ms
+    setInterval(sendJoystickData, 50);
+
+    // Initial connection attempt
+    connectWebSocket();
+
+    // --- Joystick Logic ---
+    function startDrag(e){
+      isDragging = true;
+      joystickHandle.style.cursor = 'grabbing';
+      joystickHandle.style.transition = 'none';
+      if (e.touches) e.preventDefault(); // Prevent default touch behavior
+      moveJoystick(e);
+    }
+
+    function stopDrag(){
+      if(!isDragging) return;
+      isDragging = false;
+      joystickHandle.style.cursor = 'grab';
+      joystickHandle.style.transition = 'transform 0.2s ease-out';
+      joystickHandle.style.transform = `translate(0,0)`;
+      updateUI(0, 0); // Reset UI and data
+    }
+
+    function moveJoystick(e){
+      if(!isDragging) return;
+      e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const rect = joystickContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width/2;
+      const centerY = rect.top + rect.height/2;
+      let x = clientX - centerX;
+      let y = clientY - centerY;
+      const angle = Math.atan2(y, x);
+      const dist = Math.min(Math.sqrt(x*x + y*y), maxRadius);
+      const newX = dist * Math.cos(angle);
+      const newY = dist * Math.sin(angle);
+      joystickHandle.style.transform = `translate(${newX}px,${newY}px)`;
+      updateUI(newX / maxRadius, -(newY / maxRadius));
+    }
+
+    function updateUI(nx, ny){
+      const clampedX = Math.max(-1, Math.min(1, nx));
+      const clampedY = Math.max(-1, Math.min(1, ny));
+      dataText.textContent = `X: ${clampedX.toFixed(2)} | Y: ${clampedY.toFixed(2)}`;
+      const mag = Math.min(1, Math.sqrt(clampedX * clampedX + clampedY * clampedY));
+      const percent = Math.round(mag * 100);
+      powerFill.style.height = `${percent}%`;
+      powerLabel.textContent = `${percent}%`;
+      
+      joystickData.x = clampedX;
+      joystickData.y = clampedY;
+      joystickData.power = percent;
+    }
+
+    // --- Event Listeners ---
+    joystickHandle.addEventListener('mousedown', startDrag);
+    joystickHandle.addEventListener('touchstart', startDrag, { passive: false });
+    window.addEventListener('mouseup', stopDrag);
+    window.addEventListener('touchend', stopDrag);
+    window.addEventListener('mousemove', moveJoystick);
+    window.addEventListener('touchmove', moveJoystick, { passive: false });
+    window.addEventListener('blur', stopDrag); // Stop dragging if window loses focus
+
+    // Mode buttons
+    landBtn.addEventListener('click', () => {
+      landBtn.classList.add("active");
+      waterBtn.classList.remove("active");
+      currentMode = 'land';
+      modeCard.textContent = "⚙️ Mode: Land";
+    });
+    waterBtn.addEventListener('click', () => {
+      waterBtn.classList.add("active");
+      landBtn.classList.remove("active");
+      currentMode = 'water';
+      modeCard.textContent = "⚙️ Mode: Water";
+    });
+  </script>
+</body>
+</html>
