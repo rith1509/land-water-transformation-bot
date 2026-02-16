@@ -4,6 +4,9 @@ This project is an amphibious robot featuring a custom aluminum chassis and uniq
 ### 3d-model:
 ![WhatsApp Image 2026-02-17 at 1 34 29 AM](https://github.com/user-attachments/assets/2a754fb3-3831-4793-af5a-70201e459b86)
 
+### research paper:
+https://www.cambridge.org/core/journals/robotica/article/transformable-wheelspokepaddle-hybrid-amphibious-robot/C6709AA06217C978DC44A728B30C2BFA
+
 ### demo video of cad:
 https://drive.google.com/file/d/1TpAjFlQeDrRIgggioFDRWizZloVz4fwP/view?usp=sharing
 
